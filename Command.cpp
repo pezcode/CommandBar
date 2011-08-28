@@ -80,12 +80,16 @@ void Command::initHelps()
 {
 	if(!helps.size())
 	{
-		helps["AN"] = "Help here";
+		helps["AN"] = "[<b>address</b>, def: CPU]";
 	}
 }
 
 bool Command::cmd_AN(const QStringList& arguments)
 {
+	if(arguments.size() < 0 || arguments.size() > 1) {
+		return false;
+	}
+
 	AnalyzerInterface* analyzer = edb::v1::analyzer();
 	MemRegion region;
 	if(arguments.size() > 0)

@@ -33,7 +33,7 @@ CommandBarWidget::CommandBarWidget(QWidget *parent, Qt::WindowFlags f) : QWidget
 }
 
 void CommandBarWidget::textChanged(const QString& text) {
-	ui->labelInfo->setText("");
+	ui->labelInfo->clear();
 	if(text.length() > 0)
 	{
 		QStringList parts = text.split(QRegExp("\\s+"), QString::SkipEmptyParts);
@@ -43,7 +43,7 @@ void CommandBarWidget::textChanged(const QString& text) {
 		Command cmd(cmd_str, QStringList());
 		if(cmd.isValid())
 		{
-			ui->labelInfo->setText(QString("<b>") + cmd_str + "</b>: " + cmd.name());
+			ui->labelInfo->setText(QString("<b>") + cmd_str + "</b>: " + cmd.name() + "<hr />" + "Arguments: " + cmd.help());
 		}
 	}
 }
