@@ -27,14 +27,13 @@ QMap<QString, Command::fCommand> Command::functions;
 QMap<QString, QString> Command::descriptions;
 QMap<QString, QStringList> Command::help;
 
+const Command Command::dummy = Command(QString(), QStringList());
+
 Command::Command(const QString& command, const QStringList& arguments) : valid_(false)
 {
-	if(!functions.size())
-		initFunctions();
-	if(!descriptions.size())
-		initDescriptions();
-	if(!help.size())
-		initArguments();
+	initFunctions();
+	initDescriptions();
+	initHelp();
 
 	//Q_ASSERT(functions.size() == names.size() && names.size() == helps.size());
 
@@ -55,6 +54,7 @@ bool Command::execute()
 
 	fCommand function = functions[command_];
 
+	error_ = "";
 	return (this->*function)();
 }
 
@@ -76,7 +76,7 @@ void Command::initDescriptions()
 	}
 }
 
-void Command::initArguments()
+void Command::initHelp()
 {
 	if(!help.size())
 	{
@@ -85,26 +85,10 @@ void Command::initArguments()
 	}
 }
 
-QList<Command> Command::similar_commands(const QString& command)
-{
-	QList<Command> similar;
-
-	QStringList cmd_names = functions.keys();
-
-	Q_FOREACH(const QString& name, cmd_names)
-	{
-		if(name.startsWith(command, Qt::CaseInsensitive))
-		{
-			similar << Command(name, QStringList());
-		}
-	}
-
-	return similar;
-}
-
 bool Command::cmd_AN()
 {
 	if(arguments_.size() < 0 || arguments_.size() > 1) {
+		error_ = "Invalid number of arguments";
 		return false;
 	}
 

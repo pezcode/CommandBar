@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2011 Christopher Daun
+Copyright (C) 2011 RVRS Industriis <http://rvrs.in>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -20,26 +20,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "ui_commandbar_options_page.h"
 
-//------------------------------------------------------------------------------
-// Name: CommandBarOptionsPage(QWidget *parent)
-// Desc:
-//------------------------------------------------------------------------------
 CommandBarOptionsPage::CommandBarOptionsPage(QWidget *parent) : QWidget(parent), ui(new Ui::CommandBarOptionsPage) {
 	ui->setupUi(this);
 }
 
-//------------------------------------------------------------------------------
-// Name: ~CommandBarOptionsPage()
-// Desc:
-//------------------------------------------------------------------------------
 CommandBarOptionsPage::~CommandBarOptionsPage() {
 	delete ui;
 }
 
-//------------------------------------------------------------------------------
-// Name: showEvent(QShowEvent *event)
-// Desc:
-//------------------------------------------------------------------------------
 void CommandBarOptionsPage::showEvent(QShowEvent *event) {
 	Q_UNUSED(event);
 
@@ -47,10 +35,6 @@ void CommandBarOptionsPage::showEvent(QShowEvent *event) {
 	ui->checkBox->setChecked(settings.value("CommandBar/check_on_start.enabled", true).toBool());
 }
 
-//------------------------------------------------------------------------------
-// Name: on_checkBox_toggled(bool checked)
-// Desc:
-//------------------------------------------------------------------------------
 void CommandBarOptionsPage::on_checkBox_toggled(bool checked) {
 	Q_UNUSED(checked);
 

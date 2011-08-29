@@ -21,8 +21,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <QComboBox>
 #include <QLineEdit>
 #include <QLabel>
-#include <QString>
-#include <QStringList>
 #include <QRegExp>
 
 CommandBarWidget::CommandBarWidget(QWidget* parent, Qt::WindowFlags f) : QWidget(parent, f), ui(new Ui::CommandBar) {
@@ -70,14 +68,16 @@ void CommandBarWidget::textChanged(const QString& text) {
 			else if(arg_list.empty())
 			{
 				// Show list of commands beginning with the entered characters
-				QList<Command> similar = Command::similar_commands(cmd_str);
+				QStringList similar = similar_commands(cmd_str);
 				if(!similar.empty())
 				{
 					QString info;
 					int i = 0;
-					Q_FOREACH(const Command& cmd_sim, similar)
+					Q_FOREACH(const QString& name, similar)
 					{
-						info += "<b>" + cmd_sim.name() + "</b> " + cmd_sim.description();
+						Command curcmd (name, QStringList());
+						Q_ASSERT(curcmd.isValid());
+						info += "<b>" + curcmd.name() + "</b> " + curcmd.description();
 						i++;
 						if(i != similar.size())
 							info += ", ";
@@ -120,9 +120,26 @@ void CommandBarWidget::returnPressed() {
 bool CommandBarWidget::split_input(const QString& input, QString& command, QStringList& arguments)
 {
 	arguments = input.split(QRegExp("\\s+"), QString::SkipEmptyParts);
-	Q_ASSERT(!arguments.empty());
+	if(arguments.empty())
+		return false;
 
 	command = arguments.first();
 	arguments.removeFirst();
 	return true;
+}
+
+QStringList CommandBarWidget::similar_commands(const QString& command)
+{
+	QStringList similar;
+
+	QStringList commands = Command::commands();
+	Q_FOREACH(const QString& name, commands)
+	{
+		if(name.startsWith(command, Qt::CaseInsensitive))
+		{
+			similar << name;
+		}
+	}
+
+	return similar;
 }

@@ -19,8 +19,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define COMMANDBARWIDGET_20110828_H_
 
 #include <QWidget>
-
-class QString;
+#include <QString>
+#include <QStringList>
 
 namespace Ui { class CommandBar; }
 
@@ -35,6 +35,7 @@ public Q_SLOTS:
 
 private:
 	bool split_input(const QString& input, QString& command, QStringList& arguments);
+	QStringList similar_commands(const QString& command);
 
 private:
 	Ui::CommandBar* const ui;

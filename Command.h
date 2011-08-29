@@ -37,17 +37,20 @@ public:
 	QString description() const { return descriptions[command_]; }
 	QStringList arghelp() const { return help[command_]; }
 
-	static QList<Command> similar_commands(const QString& command);
+	static QStringList commands() { return functions.keys(); }
 
 private:
 	void initFunctions();
 	void initDescriptions();
-	void initArguments();
+	void initHelp();
 
 	bool cmd_AN();
 
 private:
 	typedef bool (Command::*fCommand)();
+
+	// make sure static maps are initialized
+	static const Command dummy;
 
 	static QMap<QString, fCommand> functions;
 	static QMap<QString, QString> descriptions;
