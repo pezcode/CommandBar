@@ -26,8 +26,8 @@ class CommandBarWidget;
 class CommandBar : public QObject, public DebuggerPluginInterface {
 	Q_OBJECT
 	Q_INTERFACES(DebuggerPluginInterface)
-	Q_CLASSINFO("author", "Christopher Daun")
-	//Q_CLASSINFO("url", "http://www.codef00.com")
+	Q_CLASSINFO("author", "pezcode")
+	Q_CLASSINFO("url", "http://rvrs.in")
 
 public:
 	CommandBar();

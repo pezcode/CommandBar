@@ -27,7 +27,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 QMap<QString, Command::fCommand> Command::functions;
 QMap<QString, QString> Command::names;
-QMap<QString, QString> Command::helps;
+QMap<QString, QStringList> Command::help;
 
 Command::Command(const QString& command, const QStringList& arguments) : valid_(false)
 {
@@ -35,8 +35,8 @@ Command::Command(const QString& command, const QStringList& arguments) : valid_(
 		initFunctions();
 	if(!names.size())
 		initNames();
-	if(!helps.size())
-		initHelps();
+	if(!help.size())
+		initArguments();
 
 	//Q_ASSERT(functions.size() == names.size() && names.size() == helps.size());
 
@@ -76,11 +76,11 @@ void Command::initNames()
 	}
 }
 
-void Command::initHelps()
+void Command::initArguments()
 {
-	if(!helps.size())
+	if(!help.size())
 	{
-		helps["AN"] = "[<b>address</b>, def: CPU]";
+		help["AN"] = QStringList() << "[address (def: CPU)]";
 	}
 }
 

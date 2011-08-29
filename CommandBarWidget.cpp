@@ -43,7 +43,20 @@ void CommandBarWidget::textChanged(const QString& text) {
 		Command cmd(cmd_str, QStringList());
 		if(cmd.isValid())
 		{
-			ui->labelInfo->setText(QString("<b>") + cmd_str + "</b>: " + cmd.name() + "<hr />" + "Arguments: " + cmd.help());
+			QStringList arguments = cmd.arghelp();
+			QString argstr;
+			int i = 0;
+			Q_FOREACH(const QString& arg, arguments)
+			{
+				if(i+1 == parts.size()-1)
+					argstr += "<b>" + arg + "</b>";
+				else
+					argstr += arg;
+				i++;
+				if(i != arguments.size())
+					argstr += ", ";
+			}
+			ui->labelInfo->setText(QString("<b>") + cmd_str + "</b>: " + cmd.name() + "<hr />" + "Arguments: " + argstr);
 		}
 	}
 }

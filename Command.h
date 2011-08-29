@@ -31,12 +31,12 @@ public:
 	bool execute();
 
 	QString name() const { return names[command_]; }
-	QString help() const { return helps[command_]; }
+	QStringList arghelp() const { return help[command_]; }
 
 private:
 	void initFunctions();
 	void initNames();
-	void initHelps();
+	void initArguments();
 
 	static bool cmd_AN(const QStringList&);
 
@@ -45,7 +45,7 @@ private:
 
 	static QMap<QString, fCommand> functions;
 	static QMap<QString, QString> names;
-	static QMap<QString, QString> helps;
+	static QMap<QString, QStringList> help;
 
 	QString command_;
 	QStringList arguments_;
