@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2011 Christopher Daun
+Copyright (C) 2011 RVRS Industriis <http://rvrs.in>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

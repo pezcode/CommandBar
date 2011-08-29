@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2011 Christopher Daun
+Copyright (C) 2011 RVRS Industriis <http://rvrs.in>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -25,7 +25,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <QStringList>
 #include <QRegExp>
 
-CommandBarWidget::CommandBarWidget(QWidget *parent, Qt::WindowFlags f) : QWidget(parent, f), ui(new Ui::CommandBar), mouse_pressed_(false) {
+CommandBarWidget::CommandBarWidget(QWidget* parent, Qt::WindowFlags f) : QWidget(parent, f), ui(new Ui::CommandBar) {
 	ui->setupUi(this);
 
 	connect(ui->comboCommand->lineEdit(), SIGNAL(textChanged(const QString&)), this, SLOT(textChanged(const QString&)));
@@ -34,49 +34,95 @@ CommandBarWidget::CommandBarWidget(QWidget *parent, Qt::WindowFlags f) : QWidget
 
 void CommandBarWidget::textChanged(const QString& text) {
 	ui->labelInfo->clear();
-	if(text.length() > 0)
+	if(!text.isEmpty())
 	{
-		QStringList parts = text.split(QRegExp("\\s+"), QString::SkipEmptyParts);
-		Q_ASSERT(parts.length() > 0);
-
-		const QString cmd_str = parts.first().toUpper();
-		Command cmd(cmd_str, QStringList());
-		if(cmd.isValid())
+		QString cmd_str;
+		QStringList arg_list;
+		if(split_input(text, cmd_str, arg_list))
 		{
-			QStringList arguments = cmd.arghelp();
-			QString argstr;
-			int i = 0;
-			Q_FOREACH(const QString& arg, arguments)
+			Command cmd(cmd_str, arg_list);
+			if(cmd.isValid())
 			{
-				if(i+1 == parts.size()-1)
-					argstr += "<b>" + arg + "</b>";
-				else
-					argstr += arg;
-				i++;
-				if(i != arguments.size())
-					argstr += ", ";
+				// Show description of command and possible arguments
+				QString info = QString("<b>") + cmd.name() + "</b>: " + cmd.description();
+
+				QStringList arghelp = cmd.arghelp();
+				if(!arghelp.empty())
+				{
+					QString argstr;
+					int i = 0;
+					Q_FOREACH(const QString& arg, arghelp)
+					{
+						if(i+1 == arg_list.size())
+							argstr += "<b>" + arg + "</b>";
+						else
+							argstr += arg;
+						i++;
+						if(i != arghelp.size())
+							argstr += ", ";
+					}
+
+					info += "<hr /> Arguments: " + argstr;
+				}
+
+				ui->labelInfo->setText(info);
 			}
-			ui->labelInfo->setText(QString("<b>") + cmd_str + "</b>: " + cmd.name() + "<hr />" + "Arguments: " + argstr);
+			else if(arg_list.empty())
+			{
+				// Show list of commands beginning with the entered characters
+				QList<Command> similar = Command::similar_commands(cmd_str);
+				if(!similar.empty())
+				{
+					QString info;
+					int i = 0;
+					Q_FOREACH(const Command& cmd_sim, similar)
+					{
+						info += "<b>" + cmd_sim.name() + "</b> " + cmd_sim.description();
+						i++;
+						if(i != similar.size())
+							info += ", ";
+					}
+					ui->labelInfo->setText(info);
+				}
+			}
 		}
 	}
 }
 
 void CommandBarWidget::returnPressed() {
 	const QString text = ui->comboCommand->lineEdit()->text();
-	if(text.length() > 0)
+	if(!text.isEmpty())
 	{
-		QStringList parts = text.split(QRegExp("\\s+"), QString::SkipEmptyParts);
-		Q_ASSERT(parts.length() > 0);
-
-		const QString cmd_str = parts.first();
-		parts.removeFirst();
-		Command cmd(cmd_str, parts);
-		if(cmd.isValid())
+		QString cmd_str;
+		QStringList arg_list;
+		if(split_input(text, cmd_str, arg_list))
 		{
-			if(!cmd.execute())
+			Command cmd(cmd_str, arg_list);
+			if(cmd.isValid())
 			{
-
+				if(cmd.execute())
+				{
+					ui->labelInfo->clear();
+				}
+				else
+				{
+					ui->labelInfo->setText("<font color=\"Crimson\">" + cmd.error() + "</font>");
+				}
+			}
+			else
+			{
+				ui->labelInfo->setText("<font color=\"Crimson\">Unknown command: " + cmd_str + "</font>");
 			}
 		}
 	}
+}
+
+bool CommandBarWidget::split_input(const QString& input, QString& command, QStringList& arguments)
+{
+	arguments = input.split(QRegExp("\\s+"), QString::SkipEmptyParts);
+	Q_ASSERT(!arguments.empty());
+
+	command = arguments.first();
+	arguments.removeFirst();
+	return true;
 }

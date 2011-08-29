@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2011 Christopher Daun
+Copyright (C) 2011 RVRS Industriis <http://rvrs.in>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -26,7 +26,7 @@ class CommandBarWidget;
 class CommandBar : public QObject, public DebuggerPluginInterface {
 	Q_OBJECT
 	Q_INTERFACES(DebuggerPluginInterface)
-	Q_CLASSINFO("author", "pezcode")
+	Q_CLASSINFO("author", "RVRS")
 	Q_CLASSINFO("url", "http://rvrs.in")
 
 public:

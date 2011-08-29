@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2011 Christopher Daun
+Copyright (C) 2011 RVRS Industriis <http://rvrs.in>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -20,6 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <QString>
 #include <QStringList>
+#include <QList>
 #include <QMap>
 
 class Command
@@ -30,26 +31,32 @@ public:
 	bool isValid() const { return valid_; }
 	bool execute();
 
-	QString name() const { return names[command_]; }
+	QString error() const { return error_; }
+
+	QString name() const { return command_; }
+	QString description() const { return descriptions[command_]; }
 	QStringList arghelp() const { return help[command_]; }
+
+	static QList<Command> similar_commands(const QString& command);
 
 private:
 	void initFunctions();
-	void initNames();
+	void initDescriptions();
 	void initArguments();
 
-	static bool cmd_AN(const QStringList&);
+	bool cmd_AN();
 
 private:
-	typedef bool (*fCommand)(const QStringList&);
+	typedef bool (Command::*fCommand)();
 
 	static QMap<QString, fCommand> functions;
-	static QMap<QString, QString> names;
+	static QMap<QString, QString> descriptions;
 	static QMap<QString, QStringList> help;
 
 	QString command_;
 	QStringList arguments_;
 	bool valid_;
+	QString error_;
 };
 
 #endif

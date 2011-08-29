@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2011 Christopher Daun
+Copyright (C) RVRS Industriis <http://rvrs.in>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -27,15 +27,17 @@ namespace Ui { class CommandBar; }
 class CommandBarWidget : public QWidget {
 	Q_OBJECT
 public:
-	CommandBarWidget(QWidget *parent = 0, Qt::WindowFlags f = 0);
+	CommandBarWidget(QWidget* parent = 0, Qt::WindowFlags f = 0);
 
 public Q_SLOTS:
 	void textChanged(const QString& text);
 	void returnPressed();
 
 private:
-	Ui::CommandBar *const ui;
-	bool mouse_pressed_;
+	bool split_input(const QString& input, QString& command, QStringList& arguments);
+
+private:
+	Ui::CommandBar* const ui;
 };
 
 #endif
