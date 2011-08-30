@@ -16,18 +16,58 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "CommandBarWidget.h"
+
 #include "ui_commandbar.h"
 #include "Command.h"
 #include <QComboBox>
 #include <QLineEdit>
 #include <QLabel>
 #include <QRegExp>
+#include <QEvent>
+#include <QPalette>
 
-CommandBarWidget::CommandBarWidget(QWidget* parent, Qt::WindowFlags f) : QWidget(parent, f), ui(new Ui::CommandBar) {
+const QString CommandBarWidget::tip_text("Enter a command...");
+
+CommandBarWidget::CommandBarWidget(QWidget* parent, Qt::WindowFlags f) : QWidget(parent, f), ui(new Ui::CommandBar), has_tip_(true) {
 	ui->setupUi(this);
 
 	connect(ui->comboCommand->lineEdit(), SIGNAL(textChanged(const QString&)), this, SLOT(textChanged(const QString&)));
 	connect(ui->comboCommand->lineEdit(), SIGNAL(returnPressed()), this, SLOT(returnPressed()));
+
+	ui->comboCommand->installEventFilter(this);
+
+	pal_new_ = pal_old_ = ui->comboCommand->lineEdit()->palette();
+	pal_new_.setColor(QPalette::Text, Qt::lightGray);
+
+	ui->comboCommand->lineEdit()->setPalette(pal_new_);
+	ui->comboCommand->lineEdit()->setText(tip_text);
+}
+
+bool CommandBarWidget::eventFilter(QObject* object, QEvent* event)
+{
+	if(object == ui->comboCommand)
+	{
+		switch(event->type())
+		{
+		case QEvent::FocusIn:
+			if(has_tip_)
+			{
+				ui->comboCommand->lineEdit()->clear();
+				ui->comboCommand->lineEdit()->setPalette(pal_old_);
+			}
+			has_tip_ = false;
+			break;
+		case QEvent::FocusOut:
+			if(ui->comboCommand->lineEdit()->text().isEmpty())
+			{
+				ui->comboCommand->lineEdit()->setPalette(pal_new_);
+				ui->comboCommand->lineEdit()->setText(tip_text);
+				has_tip_ = true;
+			}
+			break;
+		}
+	}
+    return false;
 }
 
 void CommandBarWidget::textChanged(const QString& text) {
@@ -42,17 +82,20 @@ void CommandBarWidget::textChanged(const QString& text) {
 			if(cmd.isValid())
 			{
 				// Show description of command and possible arguments
-				QString info = QString("<b>") + cmd.name() + "</b>: " + cmd.description();
+				QString info = "<b>" + cmd.description() + "</b> -- " + cmd.name();
 
 				QStringList arghelp = cmd.arghelp();
 				if(!arghelp.empty())
 				{
 					QString argstr;
 					int i = 0;
+					int arg_pos = arg_list.size();
+					if(text[text.length()-1].isSpace())
+						arg_pos++;
 					Q_FOREACH(const QString& arg, arghelp)
 					{
-						if(i+1 == arg_list.size())
-							argstr += "<b>" + arg + "</b>";
+						if(i+1 == arg_pos)
+							argstr += "<u>" + arg + "</u>";
 						else
 							argstr += arg;
 						i++;
@@ -60,12 +103,12 @@ void CommandBarWidget::textChanged(const QString& text) {
 							argstr += ", ";
 					}
 
-					info += "<hr /> Arguments: " + argstr;
+					info += " " + argstr;
 				}
 
 				ui->labelInfo->setText(info);
 			}
-			else if(arg_list.empty())
+			else if(arg_list.empty() && !text[text.length()-1].isSpace())
 			{
 				// Show list of commands beginning with the entered characters
 				QStringList similar = similar_commands(cmd_str);

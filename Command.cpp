@@ -63,7 +63,7 @@ void Command::initFunctions()
 	if(!functions.size())
 	{
 		functions["AN"] = &Command::cmd_AN;
-		functions["AX"] = &Command::cmd_AN;
+		functions["BP"] = &Command::cmd_BP;
 	}
 }
 
@@ -72,7 +72,7 @@ void Command::initDescriptions()
 	if(!descriptions.size())
 	{
 		descriptions["AN"] = "Analyze region";
-		descriptions["AX"] = "AN copy";
+		descriptions["BP"] = "Set breakpoint";
 	}
 }
 
@@ -81,7 +81,7 @@ void Command::initHelp()
 	if(!help.size())
 	{
 		help["AN"] = QStringList() << "[address (def: CPU)]";
-		help["AX"] = QStringList() << "[lolol (def: CPU)]";
+		help["BP"] = QStringList() << "address" << "[condition]";
 	}
 }
 
@@ -116,5 +116,35 @@ bool Command::cmd_AN()
 	}
 
 	analyzer->analyze(region);
+	return true;
+}
+
+bool Command::cmd_BP()
+{
+	if(arguments_.size() < 1 || arguments_.size() > 2) {
+		error_ = "Invalid number of arguments";
+		return false;
+	}
+
+	QStringList::const_iterator arg_it = arguments_.begin();
+
+	const QString saddr = *arg_it++;
+	edb::address_t address = 0;
+	if(!edb::v1::eval_expression(saddr, address))
+	{
+		error_ = "Couldn't evaluate address: " + saddr;
+		return false;
+	}
+
+	edb::v1::create_breakpoint(address);
+
+	if(arguments_.size() > 1)
+	{
+		const QString condition = *arg_it;
+		edb::v1::set_breakpoint_condition(address, condition);
+	}
+
+	// todo: check if BP was actually created
+
 	return true;
 }

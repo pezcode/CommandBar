@@ -34,11 +34,19 @@ public Q_SLOTS:
 	void returnPressed();
 
 private:
+	bool eventFilter(QObject *object, QEvent *event);
+
 	bool split_input(const QString& input, QString& command, QStringList& arguments);
-	QStringList similar_commands(const QString& command);
+	QStringList similar_commands(const QString& command);	
 
 private:
 	Ui::CommandBar* const ui;
+
+	static const QString tip_text;
+
+	bool has_tip_;
+	QPalette pal_old_;
+	QPalette pal_new_;
 };
 
 #endif

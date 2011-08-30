@@ -44,7 +44,24 @@ private:
 	void initDescriptions();
 	void initHelp();
 
+	/*
+	 * TODO:
+	 * 
+	 * BP+ (BPX?) instead of BP
+	 * BP- (BPR?)(* for all)
+	 * BPD disable
+	 * BP(toggle)
+	 * HWBP ...
+	 * RUN, STEP(STEPI), STEPO, BREAK
+	 * KILL
+	 * DETACH
+	 * ATTACH pid
+	 * OPEN path
+	 * RESTART (target)
+	 * QUIT (edb)
+	 **/
 	bool cmd_AN();
+	bool cmd_BP();
 
 private:
 	typedef bool (Command::*fCommand)();

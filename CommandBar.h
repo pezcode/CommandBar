@@ -35,16 +35,9 @@ public:
 
 public:
 	virtual QMenu *menu(QWidget *parent = 0);
-	virtual QWidget *options_page();
-
-public Q_SLOTS:
-	void show_menu();
 
 private:
-	void do_check();
-
-private:
-	QMenu * menu_;
+	QMenu* menu_;
 	CommandBarWidget* commandbar_widget_;
 };
 
