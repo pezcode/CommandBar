@@ -52,16 +52,65 @@ private:
 	 * BPD disable
 	 * BP(toggle)
 	 * HWBP ...
-	 * RUN, STEP(STEPI), STEPO, BREAK
+	 * 
+	 * RUN [address]
+	 * STEP(STEPI) [times]
+	 * STEPO [times]
+	 * BREAK
+	 * 
 	 * KILL
 	 * DETACH
 	 * ATTACH pid
 	 * OPEN path
 	 * RESTART (target)
+	 * 
 	 * QUIT (edb)
+	 * 
+	 * G (go to)
+	 * 
+	 * REG register [, value]
+	 * PUSH val
+	 * POP
+	 * 
+	 * PROT address [, protection : rwx/---]
+	 * 
+	 * DUMP address, file
+	 * LOAD address, file
+	 * COPY dest, src, size
+	 * FILL dest, data, size
+	 * FIND mem, data [, size]
+	 * //ALLOC
 	 **/
+
+
 	bool cmd_AN();
+
 	bool cmd_BP();
+
+	bool cmd_GOTO();
+	bool cmd_PAUSE();
+	bool cmd_RUN();
+	bool cmd_STEP();
+	bool cmd_STEPO();
+
+	bool cmd_REG();
+	bool cmd_PUSH();
+	bool cmd_POP();
+
+	bool cmd_PROT();
+	bool cmd_FIND();
+	bool cmd_COPY();
+	bool cmd_FILL();
+	bool cmd_DUMP();
+	bool cmd_LOAD();
+
+	bool cmd_KILL();
+	bool cmd_DETACH();
+	bool cmd_ATTACH();
+	bool cmd_OPEN();
+	bool cmd_RESTART();
+
+	bool cmd_QUIT();
 
 private:
 	typedef bool (Command::*fCommand)();
