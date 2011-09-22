@@ -17,11 +17,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "Command.h"
 
-#include "Debugger.h"
 #include "MemoryRegions.h"
 #include "Configuration.h"
 #include "AnalyzerInterface.h"
 #include "DebuggerCoreInterface.h"
+#include "ArchProcessorInterface.h"
 
 #include <QDebug>
 
@@ -110,7 +110,7 @@ void Command::initDescriptions()
 		descriptions["STEP"]  = "Step instruction";
 		descriptions["STEPO"] = "Step over instruction";
 
-		descriptions["REG"]  = "Get/set register";
+		descriptions["REG"]  = "Set register";
 		descriptions["PUSH"] = "Push value to stack";
 		descriptions["POP"]  = "Pop value from stack";
 
@@ -139,6 +139,16 @@ void Command::initHelp()
 
 		help["BP"] = QStringList() << "address" << "[condition]";
 
+		help["GOTO"]  = QStringList() << "address";
+		help["PAUSE"] = QStringList();
+		help["RUN"]   = QStringList() << "[address]";
+		help["STEP"]  = QStringList() << "[times]";
+		help["STEPO"] = QStringList() << "[times]";
+
+		help["REG"]  = QStringList() << "register" << "new value";
+		help["PUSH"] = QStringList() << "value" << "[times]";
+		help["POP"]  = QStringList() << "[times]";
+
 		help["PROT"] = QStringList() << "address" << "[new protection: {r/-}{w/-}{x/-}]";
 		help["FIND"] = QStringList() << "address" << "pattern" << "[size (def: until end of block)]";
 		help["COPY"] = QStringList() << "destination" << "source" << "size";
@@ -146,22 +156,49 @@ void Command::initHelp()
 		help["DUMP"] = QStringList() << "address" << "size" << "file";
 		help["LOAD"] = QStringList() << "address" << "file" << "[max size (def: file size)]";
 
-		//help["KILL"] = QStringList();
-		//help["DETACH"] = QStringList();
+		help["KILL"] = QStringList();
+		help["DETACH"] = QStringList();
 		help["ATTACH"] = QStringList() << "process-id";
 		help["OPEN"] = QStringList() << "path";
-		//help["RESTART"] = QStringList();
+		help["RESTART"] = QStringList();
 
-		//help["QUIT"] = QStringList();
+		help["QUIT"] = QStringList();
 	}
+}
+
+bool Command::argCheck(int min, int max)
+{
+	if(arguments_.size() < min || arguments_.size() > max) {
+		error_ = "Invalid number of arguments";
+		return false;
+	}
+	return true;
+}
+
+DebuggerCoreInterface* Command::getDebuggerCoreChecked(bool checkRunning)
+{
+	DebuggerCoreInterface* debugger = edb::v1::debugger_core;
+	if(!debugger)
+	{
+		error_ = "No debugger core found";
+		return 0;
+	}
+
+	if(checkRunning && !debugger->pid())
+	{
+		error_ = "No process running";
+		return 0;
+	}
+
+	return debugger;
 }
 
 bool Command::cmd_AN()
 {
-	if(arguments_.size() < 0 || arguments_.size() > 1) {
-		error_ = "Invalid number of arguments";
+	if(!argCheck(0, 1))
 		return false;
-	}
+
+	edb::address_t addr = 0;
 
 	AnalyzerInterface* analyzer = edb::v1::analyzer();
 	if(!analyzer)
@@ -173,17 +210,16 @@ bool Command::cmd_AN()
 	MemRegion region;
 	if(arguments_.size() > 0)
 	{
-		const QString saddr = arguments_.first();
-		edb::address_t address = 0;
-		if(!edb::v1::eval_expression(saddr, address))
+		const QString& arg_addr = arguments_.first();
+		if(!edb::v1::eval_expression(arg_addr, addr))
 		{
-			error_ = "Couldn't evaluate address: " + saddr;
+			error_ = "Couldn't evaluate string: " + arg_addr;
 			return false;
 		}
 		const MemoryRegions& regions = edb::v1::memory_regions();
-		if(!regions.find_region(address, region))
+		if(!regions.find_region(addr, region))
 		{
-			error_ = "Couldn't find address: " + edb::v1::format_pointer(address);
+			error_ = "Couldn't find address: " + edb::v1::format_pointer(addr);
 			return false;
 		}
 	}
@@ -198,27 +234,26 @@ bool Command::cmd_AN()
 
 bool Command::cmd_BP()
 {
-	if(arguments_.size() < 1 || arguments_.size() > 2) {
-		error_ = "Invalid number of arguments";
+	if(!argCheck(1, 2))
 		return false;
-	}
 
 	QStringList::const_iterator arg_it = arguments_.begin();
+	const QString& arg_addr = *arg_it++;
 
-	const QString saddr = *arg_it++;
-	edb::address_t address = 0;
-	if(!edb::v1::eval_expression(saddr, address))
+	edb::address_t addr;
+
+	if(!edb::v1::eval_expression(arg_addr, addr))
 	{
-		error_ = "Couldn't evaluate address: " + saddr;
+		error_ = "Couldn't evaluate string: " + arg_addr;
 		return false;
 	}
 
-	edb::v1::create_breakpoint(address);
+	edb::v1::create_breakpoint(addr);
 
 	if(arguments_.size() > 1)
 	{
-		const QString condition = *arg_it;
-		edb::v1::set_breakpoint_condition(address, condition);
+		const QString& arg_condition = *arg_it;
+		edb::v1::set_breakpoint_condition(addr, arg_condition);
 	}
 
 	// todo: check if BP was actually created
@@ -228,107 +263,313 @@ bool Command::cmd_BP()
 
 bool Command::cmd_GOTO()
 {
-	error_ = "Not yet implemented";
-	return false;
+	if(!argCheck(1, 1))
+		return false;
+
+	const QString& arg_addr = arguments_.first();
+
+	edb::address_t addr = 0;
+
+	if(!edb::v1::eval_expression(arg_addr, addr))
+	{
+		error_ = "Couldn't evaluate string: " + arg_addr;
+		return false;
+	}
+
+	edb::v1::jump_to_address(addr);
+
+	return true;
 }
 
 bool Command::cmd_PAUSE()
 {
-	error_ = "Not yet implemented";
-	return false;
+	if(!argCheck(0, 0))
+		return false;
+
+	DebuggerCoreInterface* debugger = getDebuggerCoreChecked();
+	if(!debugger)
+		return false;
+
+	debugger->pause();
+
+	return true;
 }
 
 bool Command::cmd_RUN()
 {
-	error_ = "Not yet implemented";
-	return false;
+	if(!argCheck(0, 1))
+		return false;
+
+	edb::address_t addr = 0;
+
+	DebuggerCoreInterface* debugger = getDebuggerCoreChecked();
+	if(!debugger)
+		return false;
+
+	if(arguments_.size() > 0) // set one-time BP
+	{
+		const QString& arg_addr = arguments_.first();
+		if(!edb::v1::eval_expression(arg_addr, addr))
+		{
+			error_ = "Couldn't evaluate string: " + arg_addr;
+			return false;
+		}
+
+		// TODO
+	}
+
+	debugger->resume(edb::DEBUG_CONTINUE);
+
+	return true;
 }
 
 bool Command::cmd_STEP()
 {
-	error_ = "Not yet implemented";
-	return false;
+	if(!argCheck(0, 1))
+		return false;
+
+	edb::address_t times = 1;
+
+	DebuggerCoreInterface* debugger = getDebuggerCoreChecked();
+	if(!debugger)
+		return false;	
+
+	if(arguments_.size() > 0)
+	{
+		// set one-time BP
+		const QString& arg_times = arguments_.first();
+		if(!edb::v1::eval_expression(arg_times, times))
+		{
+			error_ = "Couldn't evaluate string: " + arg_times;
+			return false;
+		}
+	}
+
+	// TODO
+	// for loop???
+
+	debugger->step(edb::DEBUG_CONTINUE); //??
+
+	return true;
 }
 
 bool Command::cmd_STEPO()
 {
-	error_ = "Not yet implemented";
-	return false;
+	if(!argCheck(0, 1))
+		return false;
+
+	edb::address_t times = 1;
+
+	DebuggerCoreInterface* debugger = getDebuggerCoreChecked();
+	if(!debugger)
+		return false;
+
+	if(arguments_.size() > 0)
+	{
+		// set one-time BP
+		const QString& arg_times = arguments_.first();
+		if(!edb::v1::eval_expression(arg_times, times))
+		{
+			error_ = "Couldn't evaluate string: " + arg_times;
+			return false;
+		}
+	}
+
+	// TODO
+	// for loop???
+
+	// stop over??
+	debugger->step(edb::DEBUG_CONTINUE); //??
+
+	return true;
 }
 
 bool Command::cmd_REG()
 {
-	error_ = "Not yet implemented";
-	return false;
+	if(!argCheck(2, 2))
+		return false;
+
+	QStringList::const_iterator arg_it = arguments_.begin();
+	const QString& arg_reg = *arg_it++;
+	const QString& arg_val = *arg_it++;
+
+	edb::address_t val = 0;
+
+	DebuggerCoreInterface* debugger = getDebuggerCoreChecked();
+	if(!debugger)
+		return false;
+
+	State state;
+	debugger->get_state(state);
+
+	Register reg = state.value(arg_reg);
+	if(reg.type() == Register::TYPE_INVALID)
+	{
+		error_ = "Invalid register";
+		return false;
+	}
+
+	if(!edb::v1::eval_expression(arg_val, val))
+	{
+		error_ = "Couldn't evaluate string: " + arg_val;
+		return false;
+	}
+
+	state.set_register(reg.name(), val);
+
+	debugger->set_state(state);
+
+	edb::v1::arch_processor().update_register_view("");
+
+	return true;
 }
 
 bool Command::cmd_PUSH()
 {
-	error_ = "Not yet implemented";
-	return false;
+	if(!argCheck(1, 2))
+		return false;
+
+	QStringList::const_iterator arg_it = arguments_.begin();
+	const QString& arg_val = *arg_it++;
+
+	edb::address_t val;
+	edb::address_t times = 1;
+
+	if(!edb::v1::eval_expression(arg_val, val))
+	{
+		error_ = "Couldn't evaluate string: " + arg_val;
+		return false;
+	}
+
+	if(arguments_.size() > 1)
+	{
+		const QString& arg_times = *arg_it++;
+		if(!edb::v1::eval_expression(arg_times, times))
+		{
+			error_ = "Couldn't evaluate string: " + arg_times;
+			return false;
+		}
+	}
+
+	DebuggerCoreInterface* debugger = getDebuggerCoreChecked();
+	if(!debugger)
+		return false;
+
+	State state;
+	debugger->get_state(state);
+
+	for(edb::address_t i = 0; i < times; i++)
+	{
+		edb::v1::push_value(state, val);
+	}
+
+	debugger->set_state(state);
+
+	edb::v1::arch_processor().update_register_view("");
+	edb::v1::dump_stack(state.stack_pointer(), true);
+
+	return true;
 }
 
 bool Command::cmd_POP()
 {
-	error_ = "Not yet implemented";
-	return false;
+	if(!argCheck(0, 1))
+		return false;
+
+	edb::address_t times = 1;
+
+	if(arguments_.size() > 0)
+	{
+		const QString& arg_times = arguments_.first();
+		if(!edb::v1::eval_expression(arg_times, times))
+		{
+			error_ = "Couldn't evaluate string: " + arg_times;
+			return false;
+		}
+	}
+
+	DebuggerCoreInterface* debugger = getDebuggerCoreChecked();
+	if(!debugger)
+		return false;
+
+	State state;
+	debugger->get_state(state);
+
+	for(edb::address_t i = 0; i < times; i++)
+	{
+		edb::v1::pop_value(state);
+	}
+
+	debugger->set_state(state);
+
+	edb::v1::arch_processor().update_register_view("");
+	edb::v1::dump_stack(state.stack_pointer(), true);
+
+	return true;
 }
 
 bool Command::cmd_PROT()
 {
+	if(!argCheck(1, 2))
+		return false;
+
 	error_ = "Not yet implemented";
 	return false;
 }
 
 bool Command::cmd_FIND()
 {
+	if(!argCheck(2, 3))
+		return false;
+
 	error_ = "Not yet implemented";
 	return false;
 }
 
 bool Command::cmd_COPY()
 {
+	if(!argCheck(3, 3))
+		return false;
+
 	error_ = "Not yet implemented";
 	return false;
 }
 
 bool Command::cmd_FILL()
 {
+	if(!argCheck(3, 3))
+		return false;
+
 	error_ = "Not yet implemented";
 	return false;
 }
 
 bool Command::cmd_DUMP()
 {
+	if(!argCheck(3, 3))
+		return false;
+
 	error_ = "Not yet implemented";
 	return false;
 }
 
 bool Command::cmd_LOAD()
 {
+	if(!argCheck(2, 3))
+		return false;
+
 	error_ = "Not yet implemented";
 	return false;
 }
 
 bool Command::cmd_KILL()
 {
-	if(arguments_.size() != 0) {
-		error_ = "Invalid number of arguments";
+	if(!argCheck(0, 0))
 		return false;
-	}
 
-	DebuggerCoreInterface* debugger = edb::v1::debugger_core;
+	DebuggerCoreInterface* debugger = getDebuggerCoreChecked();
 	if(!debugger)
-	{
-		error_ = "No debugger core found";
 		return false;
-	}
-
-	if(!debugger->pid())
-	{
-		error_ = "No process running";
-		return false;
-	}
 
 	debugger->kill();
 	return true;
@@ -336,23 +577,12 @@ bool Command::cmd_KILL()
 
 bool Command::cmd_DETACH()
 {
-	if(arguments_.size() != 0) {
-		error_ = "Invalid number of arguments";
+	if(!argCheck(0, 0))
 		return false;
-	}
 
-	DebuggerCoreInterface* debugger = edb::v1::debugger_core;
+	DebuggerCoreInterface* debugger = getDebuggerCoreChecked();
 	if(!debugger)
-	{
-		error_ = "No debugger core found";
 		return false;
-	}
-
-	if(!debugger->pid())
-	{
-		error_ = "No process running";
-		return false;
-	}
 
 	debugger->detach();
 	return true;
@@ -360,17 +590,12 @@ bool Command::cmd_DETACH()
 
 bool Command::cmd_ATTACH()
 {
-	if(arguments_.size() != 1) {
-		error_ = "Invalid number of arguments";
+	if(!argCheck(1, 1))
 		return false;
-	}
 
-	DebuggerCoreInterface* debugger = edb::v1::debugger_core;
+	DebuggerCoreInterface* debugger = getDebuggerCoreChecked(false);
 	if(!debugger)
-	{
-		error_ = "No debugger core found";
 		return false;
-	}
 
 	const QString spid = arguments_.first();
 	edb::address_t value;
@@ -390,51 +615,30 @@ bool Command::cmd_ATTACH()
 
 bool Command::cmd_OPEN()
 {
+	if(!argCheck(1, 1))
+		return false;
+
+	DebuggerCoreInterface* debugger = getDebuggerCoreChecked();
+	if(!debugger)
+		return false;
+
 	error_ = "Not yet implemented";
 	return false;
-
-	if(arguments_.size() != 1) {
-		error_ = "Invalid number of arguments";
-		return false;
-	}
-
-	DebuggerCoreInterface* debugger = edb::v1::debugger_core;
-	if(!debugger)
-	{
-		error_ = "No debugger core found";
-		return false;
-	}
-
-	if(!debugger->pid())
-	{
-		error_ = "No process running";
-		return false;
-	}
-
-	debugger->detach();
-	return true;
 }
 
 bool Command::cmd_RESTART()
 {
-	if(arguments_.size() != 0) {
-		error_ = "Invalid number of arguments";
+	if(!argCheck(0, 0))
 		return false;
-	}
 
-	DebuggerCoreInterface* debugger = edb::v1::debugger_core;
+	DebuggerCoreInterface* debugger = getDebuggerCoreChecked();
 	if(!debugger)
-	{
-		error_ = "No debugger core found";
 		return false;
-	}
 
-	if(!debugger->pid())
-	{
-		error_ = "No process running";
-		return false;
-	}
+	error_ = "Not yet implemented";
+	return false;
 
+	/*
 	const QString path = edb::v1::get_process_exe();
 	const QStringList args = edb::v1::get_process_args();
 	const QString cwd  = edb::v1::get_process_cwd();
@@ -449,10 +653,14 @@ bool Command::cmd_RESTART()
 		return false;
 	}
 	return true;
+	*/
 }
 
 bool Command::cmd_QUIT()
 {
+	if(!argCheck(0, 0))
+		return false;
+
 	error_ = "Not yet implemented";
 	return false;
 }

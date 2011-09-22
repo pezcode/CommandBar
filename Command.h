@@ -23,6 +23,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <QList>
 #include <QMap>
 
+#include "Debugger.h"
+
 class Command
 {
 public:
@@ -43,6 +45,9 @@ private:
 	void initFunctions();
 	void initDescriptions();
 	void initHelp();
+
+	bool argCheck(int min, int max);
+	DebuggerCoreInterface* getDebuggerCoreChecked(bool checkRunning = true);
 
 	/*
 	 * TODO:
